@@ -1,29 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include "sll.h"
 
-typedef struct Node{
-    int data;
-    struct Node *next;
-}Node;
-
+// create a head pointer to point to the first node of linked list
 Node *head = NULL;
 
-Node *Create_Node(int data){
+// create node is a function to make a node with value and next null pointer.
+Node *CreateNode(int data){
     Node *newNode = (Node*)malloc(sizeof(Node));
     if (newNode == NULL) {
-        printf("Memory Allocation is Failed.\n");
+        printf("Dynamic Memory Allocation is Failed.\n");
         exit(1);
     }
-
     newNode->data = data;
     newNode->next = NULL;
     return newNode;
 }
 
-void insert_at_begining(Node **head, int data){
-    Node *newNode = Create_Node(data);
-    if (newNode == NULL) {
+// insert at the start of the linked list
+void insert_at_start(Node **head, int data){
+    Node *newNode = CreateNode(data);
+    if (*head == NULL) {
         *head = newNode;
         return;
     }
@@ -33,9 +30,10 @@ void insert_at_begining(Node **head, int data){
     return;
 }
 
+// insert at the end of linked list
 void insert_at_end(Node **head, int data){
-    Node *newNode = Create_Node(data);
-    if (newNode == NULL) {
+    Node *newNode = CreateNode(data);
+    if (*head == NULL) {
         *head = newNode;
         return;
     }
@@ -48,86 +46,123 @@ void insert_at_end(Node **head, int data){
     return;
 }
 
-void insert_at_index(Node **head, int position, int data){
-    if (position == 0) {
-        insert_at_begining(head, data);
+// insert at the index of the linked list (where we want)
+void insert_at_index(Node **head, int index, int data){
+    Node *newNode = CreateNode(data);
+
+    if (*head == NULL) {
+        *head = newNode;
         return;
     }
 
-    Node* newNode  = Create_Node(data);
-    Node *temp = *head;
-    for (int i = 0; i < position-1; i++) {
-        temp = temp->next;
+    if (index < 0) {
+        printf("Invalid Index\n");
+        return;
     }
 
+    if (index == 0) {
+        insert_at_start(head, data);
+        return;
+    }
+
+    Node *temp = *head;
+
+    for (int i = 0; i < index-1 && temp != NULL; i++) {
+        temp = temp->next;
+    }
+    if (temp == NULL) {
+        printf("Out of range\n");
+        return;
+    }
     newNode->next = temp->next;
     temp->next = newNode;
     return;
+
 }
 
-void delete_at_begining(Node **head){
+// delete from start of the linked list
+void delete_at_start(Node **head){
     if (*head == NULL) {
-        printf("Linked List is Empty nothing to remove from here.\n");
+        printf("linked list is empty nothing to delete.\n");
         return;
     }
+    if ((*head)->next == NULL) {
+        free(*head);
+        *head = NULL;
+        return;
+    }
+
     Node *temp = *head;
-    *head = (*head)->next;
+    *head = temp->next;
     temp->next = NULL;
     free(temp);
-    return;
 }
 
+// delete from end fo the linked list
 void delete_at_end(Node **head){
     if (*head == NULL) {
-        printf("Linked List is Empty nothing to remove from here.\n");
+        printf("linked list is empty nothing to delete.\n");
         return;
     }
+    if ((*head)->next == NULL) {
+        free(*head);
+        *head = NULL;
+        return;
+    }
+
     Node *temp = (*head)->next;
     Node *prev = *head;
+
     while (temp->next != NULL) {
         temp = temp->next;
         prev = prev->next;
     }
     prev->next = NULL;
     free(temp);
-    return;
 }
 
-void delete_at_index(Node **head, int position){
+// delete node using index (where we want can delete the node from linked list)
+void delete_at_index(Node **head, int index){
+    if (*head == NULL) {
+        printf("list is empty\n");
+        return;
+    }
+
+    if (index < 0) {
+        printf("Invalid index\n");
+        return;
+    }
+
     if ((*head)->next == NULL) {
         free(*head);
         *head = NULL;
         return;
     }
-    if (position == 0) {
-        delete_at_begining(head);
+
+    if (index == 0) {
+        delete_at_start(head);
         return;
     }
 
     Node *temp = (*head)->next;
-    Node* q = *head;
-    for (int i = 0; i < position-1; i++) {
+    Node *prev = *head;
+    for (int i = 0; i < index -1 && temp != NULL; i++) {
         temp = temp->next;
-        q = q->next;
+        prev = prev->next;
     }
-    q->next = temp->next;
-    temp->next = NULL;
-    free(temp);
-}
 
-void update_at_index(Node **head, int index, int new_element){
-    if ((*head)->next == NULL) {
-        (*head)->data = new_element;
+    if (temp == NULL) {
+        printf("Out of Range\n");
         return;
     }
-    Node *temp = *head;
-    for (int i = 0; i < index; i++) {
-        temp = temp->next;
-    }
-    temp->data = new_element;
+    prev->next = temp->next;
+    temp->next = NULL;
+    free(temp);
     return;
+
 }
 
+// Search a node we want from anywhere of the list
 int Search(Node **head, int key){
     Node *temp = *head;
     int index = 0;
@@ -142,36 +177,72 @@ int Search(Node **head, int key){
     return -1;
 }
 
+// update the existing node with new node inside linked list
+void update_node(Node **head, int index, int new_data){
+    if (index < 0) {
+        printf("Invalid index\n");
+        return;
+    }
+
+    if ((*head)->next == NULL) {
+        (*head)->data = new_data;
+        return;
+    }
+
+    Node *temp = *head;
+    for (int i = 0; i < index && temp != NULL; i++) {
+        temp = temp->next;
+    }
+
+    if (temp == NULL) {
+        printf("Out of Range\n");
+        return;
+    }
+
+    temp->data = new_data;
+return;
+}
+
+// display the created linked list nodes one by one's
 void display(Node *head){
+    if (head == NULL) {
+        printf("linked list is empty.\n");
+        return;
+    }
+
     Node *temp = head;
+
+    printf("[");
     while (temp != NULL) {
         printf("%d ", temp->data);
         temp = temp->next;
     }
-    printf(">> NULL \n");
+    printf("]");
+    printf("\n");
 }
 
 int main(){
-    insert_at_begining(&head, 10);
-    insert_at_begining(&head, 20);
-    insert_at_begining(&head, 30);
-    insert_at_begining(&head, 40);
-    insert_at_begining(&head, 50);
-    //insert_at_end(&head, 600);
-    //insert_at_index(&head, 2, 700);
+    insert_at_start(&head, 10);
+    insert_at_start(&head, 20);
+    insert_at_start(&head, 30);
+    insert_at_start(&head, 40);
+    insert_at_start(&head, 50);
+    //insert_at_end(&head, 60);
+    //insert_at_index(&head, 2, 100);
 
-    //delete_at_begining(&head);
+
+    //delete_at_start(&head);
     //delete_at_end(&head);
-    //delete_at_index(&head, 4);
+    //delete_at_index(&head, 5);
 
-    //int result = Search(&head, 23);
+    //int result = Search(&head, 70);
     //if (result != -1) {
-        //printf("Key is Found at index [%d]\n", result);
+        //printf("Node Found index[%d]\n", result);
     //}else {
-        //printf("Key is not Found at index [%d]\n", result);
+        //printf("Node not Found\n");
     //}
 
-   // update_at_index(&head,4, 100);
+    //update_node(&head, -1, 100);
 
     display(head);
     return 0;
