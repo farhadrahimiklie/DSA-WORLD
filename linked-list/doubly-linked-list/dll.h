@@ -14,7 +14,7 @@ void insert_at_index(Node **head, int index, int data);
 void delete_at_start(Node **head);
 void delete_at_end(Node **head);
 void delete_at_index(Node **head, int index);
-int Search(Node **head, int key);
+int Search(Node *head, int key);
 void display_forward(Node *head);
 void display_backward(Node *head);
 

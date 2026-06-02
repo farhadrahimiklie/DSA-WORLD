@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "dll.h"
 
-Node *head = NULL;
 
 Node *CreateNode(int data){
     Node *newNode = (Node*)malloc(sizeof(Node));
@@ -61,7 +60,8 @@ void insert_at_index(Node **head, int index, int data){
     Node *newNode = CreateNode(data);
 
     if (*head == NULL) {
-        *head = newNode;
+        printf("Out of Range\n");
+        free(newNode);
         return;
     }
 
@@ -73,6 +73,7 @@ void insert_at_index(Node **head, int index, int data){
 
     if (temp == NULL) {
         printf("Out of Range\n");
+        free(newNode);
         return;
     }
 
@@ -80,9 +81,7 @@ void insert_at_index(Node **head, int index, int data){
     if (temp->next != NULL) {
         temp->next->prev = newNode;
     }
-    if (temp != NULL) {
-        newNode->prev = temp;
-    }
+    newNode->prev = temp;
     temp->next = newNode;
     return;
 }
@@ -102,9 +101,7 @@ void delete_at_start(Node **head){
 
     Node *temp = *head;
     *head = temp->next;
-    if ((*head)->prev != NULL) {
-        (*head)->prev = NULL;
-    }
+    (*head)->prev = NULL;
     temp->next = NULL;
     free(temp);
     return;
@@ -129,9 +126,7 @@ void delete_at_end(Node **head){
     }
 
     temp->prev->next = NULL;
-    if (temp->prev != NULL) {
-        temp->prev = NULL;
-    }
+    temp->prev = NULL;
     free(temp);
     return;
 }
@@ -143,8 +138,12 @@ void delete_at_index(Node **head, int index){
     }
 
     if ((*head)->next == NULL) {
-        free(*head);
-        *head = NULL;
+        if (index == 0) {
+            free(*head);   
+            *head = NULL;
+        }else{
+            printf("Out of Range\n");
+        }
         return;
     }
 
@@ -165,7 +164,7 @@ void delete_at_index(Node **head, int index){
     }
 
     if (temp == NULL) {
-        printf("Out or Range\n");
+        printf("Out of Range\n");
         return;
     }
 
@@ -174,19 +173,19 @@ void delete_at_index(Node **head, int index){
     }
     if (temp->prev != NULL) {
         temp->prev->next = temp->next;
-    
+
     }
 
     free(temp);
-
+    return;
 }
 
-int Search(Node **head, int key){
-    if (*head == NULL) {
+int Search(Node *head, int key){
+    if (head == NULL) {
         printf("list is empty\n");
-        exit(1);
+        return -1;
     }
-    Node *temp = *head;
+    Node *temp = head;
     int index = 0;
     while (temp != NULL) {
         if (temp->data == key) {
@@ -217,7 +216,7 @@ void display_forward(Node *head){
 void display_backward(Node *head){
     if (head == NULL) {
         printf("linked list is empty\n");
-        exit(1);
+        return;
     }
 
     Node *temp = head;
@@ -246,6 +245,8 @@ void free_doubly_linked_list(Node **head){
 }
 
 int main(){
+    Node *head = NULL;
+
     insert_at_start(&head, 10);
     insert_at_start(&head, 20);
     insert_at_start(&head, 30);
@@ -256,20 +257,21 @@ int main(){
 
 
     //delete_at_start(&head);
-   // delete_at_end(&head);
-   //delete_at_index(&head, 5);
+    // delete_at_end(&head);
+    //delete_at_index(&head, 5);
 
 
-    //int result = Search(&head, 0);
+    //int result = Search(head, 0);
     //if (result != -1) {
-        //printf("Node Found [%d]\n", result);
+    //printf("Node Found [%d]\n", result);
     //}else {
-       //printf("Node Not Found\n");
+    //printf("Node Not Found\n");
     //}
 
 
 
     //display_forward(head);
     display_backward(head);
+    free_doubly_linked_list(&head);
     return 0;
 }
