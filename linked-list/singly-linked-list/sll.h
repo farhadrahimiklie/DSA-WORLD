@@ -17,5 +17,5 @@ void delete_at_index(Node **head, int index);
 int Search(Node **head, int key);
 void update_node(Node **head, int index, int new_data);
 void display(Node *head);
-
+void free_singly_linked_list(Node **head);
 #endif

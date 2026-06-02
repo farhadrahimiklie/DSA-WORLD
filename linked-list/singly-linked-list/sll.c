@@ -48,6 +48,11 @@ void insert_at_end(Node **head, int data){
 
 // insert at the index of the linked list (where we want)
 void insert_at_index(Node **head, int index, int data){
+    if (index == 0) {
+        insert_at_start(head, data);
+        return;
+    }
+
     Node *newNode = CreateNode(data);
 
     if (*head == NULL) {
@@ -60,10 +65,6 @@ void insert_at_index(Node **head, int index, int data){
         return;
     }
 
-    if (index == 0) {
-        insert_at_start(head, data);
-        return;
-    }
 
     Node *temp = *head;
 
@@ -221,6 +222,18 @@ void display(Node *head){
     printf("\n");
 }
 
+void free_singly_linked_list(Node **head){
+    Node *temp;
+
+    while (*head != NULL) {
+        temp = *head;
+        *head = (*head)->next;
+        free(temp);
+    }
+
+    *head = NULL;
+}
+
 int main(){
     insert_at_start(&head, 10);
     insert_at_start(&head, 20);
@@ -245,5 +258,7 @@ int main(){
     //update_node(&head, -1, 100);
 
     display(head);
+
+    free_singly_linked_list(&head);
     return 0;
 }

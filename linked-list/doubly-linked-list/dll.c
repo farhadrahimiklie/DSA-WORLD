@@ -48,10 +48,8 @@ void insert_at_end(Node **head, int data){
 }
 
 void insert_at_index(Node **head, int index, int data){
-    Node *newNode = CreateNode(data);
-
-    if (*head == NULL) {
-        *head = newNode;
+    if (index == 0) {
+        insert_at_start(head, data);
         return;
     }
 
@@ -60,10 +58,13 @@ void insert_at_index(Node **head, int index, int data){
         return;
     }
 
-    if (index == 0) {
-        insert_at_start(head, data);
+    Node *newNode = CreateNode(data);
+
+    if (*head == NULL) {
+        *head = newNode;
         return;
     }
+
 
     Node *temp = *head;
     for (int i = 0; i < index -1 && temp != NULL; i++) {
@@ -87,16 +88,17 @@ void insert_at_index(Node **head, int index, int data){
 }
 
 void delete_at_start(Node **head){
+    if (*head == NULL) {
+        printf("linked is empty\n");
+        return;
+    }
+
     if ((*head)->next == NULL) {
         free(*head);
         *head = NULL;
         return;
     }
 
-    if (*head == NULL) {
-        printf("linked is empty\n");
-        return;
-    }
 
     Node *temp = *head;
     *head = temp->next;
@@ -109,16 +111,17 @@ void delete_at_start(Node **head){
 }
 
 void delete_at_end(Node **head){
+    if (*head == NULL) {
+        printf("linked list is empty\n");
+        return;
+    }
+
     if ((*head)->next == NULL) {
         free(*head);
         *head = NULL;
         return;
     }
 
-    if (*head == NULL) {
-        printf("linked list is empty\n");
-        return;
-    }
 
     Node *temp = *head;
     while (temp->next != NULL) {
@@ -134,16 +137,17 @@ void delete_at_end(Node **head){
 }
 
 void delete_at_index(Node **head, int index){
+    if (*head == NULL) {
+        printf("linked list is empty\n");
+        return;
+    }
+
     if ((*head)->next == NULL) {
         free(*head);
         *head = NULL;
         return;
     }
 
-    if (*head == NULL) {
-        printf("linked list is empty\n");
-        return;
-    }
 
     if (index < 0) {
         printf("Invalid index\n");
@@ -228,6 +232,17 @@ void display_backward(Node *head){
     }
 
     printf("NULL\n");
+}
+
+void free_doubly_linked_list(Node **head){
+    Node *temp;
+    while (*head != NULL) {
+        temp = *head;
+        *head = (*head)->next;
+        free(temp);
+    }
+
+    *head = NULL;
 }
 
 int main(){
