@@ -11,8 +11,8 @@ void init_stack(Stack *stack);
 int isEmpty(Stack *stack);
 int isFull(Stack *stack);
 void push_to_stack(Stack *stack, int data);
-void pop_from_stack(Stack *stack);
+int pop_from_stack(Stack *stack);
 int Top(Stack *stack);
 void display(Stack *stack);
-
+void free_stack(Stack *stack);
 #endif
