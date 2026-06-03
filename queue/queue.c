@@ -1,12 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef struct {
-    int *array;
-    int size;
-    int front;
-    int rear;
-}Queue;
+#include "queue.h"
 
 void init_queue(Queue *queue){
     queue->size = 6;
