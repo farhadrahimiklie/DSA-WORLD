@@ -17,7 +17,7 @@ print_time "Compilation ${GREEN}Started${RESET} at"
 # ======================
 # 1. COMPILE
 # ======================
-COMPILE_OUTPUT=$(gcc -Wall -Wextra -Wpedantic -Werror -g main.c -o main 2>&1)
+COMPILE_OUTPUT=$(gcc -Wall -Wextra -Wpedantic -Werror -g hash.c -o main 2>&1)
     COMPILE_STATUS=$?
 
     [ -n "$COMPILE_OUTPUT" ] && echo "$COMPILE_OUTPUT"
