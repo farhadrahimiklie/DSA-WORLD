@@ -1,54 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// ========== type alias
-typedef unsigned int uint;
-typedef unsigned long ulong;
-
-// ========== some macros
-#define INITIAL_CAPACITY 8
-#define LOAD_FACTOR_BALANCE_THRESHOLD 0.7
-#define KEY_CAPACITY 64
-
-// ========== Enums
-typedef enum { LINEAR, QUADRATIC, DOUBLE_HASH } ProbingTypes;
-typedef enum { OPEN_ADDRESSING, SEPARATE_CHAINING } CollisionMode;
-typedef enum { EMPTY, OCCUPIED, DELETED } State;
-
-// ========== Entry (OPEN_ADDRESSING)
-typedef struct {
-    char key[KEY_CAPACITY];
-    int value;
-    State state;
-}Entry;
-
-// ========== Node (SEPARATE_CHAINING)
-typedef struct Node{
-    char key[KEY_CAPACITY];
-    int value;
-    struct Node *next;
-}Node;
-
-// ========== Analytics structure
-typedef struct {
-    long inserts, updates, deletes, searches;
-    long collisions, probing;
-}Analytics;
-
-// ========== Hash Table Structure
-typedef struct {
-    Entry *table;
-    Node **chainTable;
-
-    int capacity;
-    int count;
-
-    ProbingTypes probing;
-    CollisionMode mode;
-
-    Analytics analyse;
-}HashTable;
+#include "secondHash.h"
 
 // ========== first Hash
 uint first_hash(char *key, int capacity){
@@ -88,7 +41,7 @@ uint which_type_of_probe_should_return(HashTable *map, char *key, int i){
     return (index + i * second_hash(key, map->capacity)) % map->capacity;
 }
 
-HashTable *create_hash_table(int capacity, ProbingTypes probing, CollisionMode mode){
+HashTable *create_hash_bucket(int capacity, ProbingTypes probing, CollisionMode mode){
     HashTable *init_hash = (HashTable*)malloc(sizeof(HashTable));
     if (!init_hash) {
         printf("Memory Allocation is Failed.\n");
@@ -100,19 +53,19 @@ HashTable *create_hash_table(int capacity, ProbingTypes probing, CollisionMode m
     init_hash->probing = probing;
     init_hash->mode = mode;
 
-    memset(&init_hash->analyse, 0, sizeof(Analytics));
+    memset(&init_hash->statistics, 0, sizeof(Statistics));
 
     if (mode == OPEN_ADDRESSING) {
-        init_hash->table = (Entry*)calloc(capacity, sizeof(Entry));
-        if (init_hash->table == NULL) {
+        init_hash->bucket = (Entry*)calloc(capacity, sizeof(Entry));
+        if (init_hash->bucket == NULL) {
             printf("Memory Allocation is Failed\n");
             exit(EXIT_FAILURE);
         }
-        init_hash->chainTable = NULL;
+        init_hash->chainbucket = NULL;
     }else {
-        init_hash->table = NULL;
-        init_hash->chainTable = calloc(capacity, sizeof(Node));
-        if (init_hash->chainTable == NULL) {
+        init_hash->bucket = NULL;
+        init_hash->chainbucket = calloc(capacity, sizeof(Node));
+        if (init_hash->chainbucket == NULL) {
             printf("Memory Allocation is Failed\n");
             exit(EXIT_FAILURE);
         }
@@ -125,21 +78,21 @@ HashTable *create_hash_table(int capacity, ProbingTypes probing, CollisionMode m
 void insert_to_open_addressing(HashTable *map, char *key, int value){
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
-        map->analyse.probing++;
+        map->statistics.probing++;
 
-        if (map->table[index].state == OCCUPIED && strcmp(map->table[index].key, key) == 0) {
-            map->table[index].value = value;
-            map->analyse.updates++;
+        if (map->bucket[index].status == OCCUPIED && strcmp(map->bucket[index].key, key) == 0) {
+            map->bucket[index].value = value;
+            map->statistics.updates++;
             return;
         }
 
-        if (map->table[index].state != OCCUPIED) {
-            strncpy(map->table[index].key, key, KEY_CAPACITY -1);
-            map->table[index].value = value;
-            map->table[index].state = OCCUPIED;
+        if (map->bucket[index].status != OCCUPIED) {
+            strncpy(map->bucket[index].key, key, KEY_CAPACITY -1);
+            map->bucket[index].value = value;
+            map->bucket[index].status = OCCUPIED;
 
             map->count++;
-            map->analyse.inserts++;
+            map->statistics.inserts++;
             return;
         }
     }
@@ -148,14 +101,14 @@ void insert_to_open_addressing(HashTable *map, char *key, int value){
 int search_from_open_addressing(HashTable *map, char *key){
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
-        map->analyse.probing++;
+        map->statistics.probing++;
 
-        if (map->table[index].state == EMPTY) {
+        if (map->bucket[index].status == EMPTY) {
             return -1;
         }
-        if (map->table[index].state == OCCUPIED && strcmp(map->table[index].key, key) == 0) {
-            map->analyse.searches++;
-            return map->table[index].value;
+        if (map->bucket[index].status == OCCUPIED && strcmp(map->bucket[index].key, key) == 0) {
+            map->statistics.searches++;
+            return map->bucket[index].value;
         }
     }
     return -1;
@@ -164,15 +117,15 @@ int search_from_open_addressing(HashTable *map, char *key){
 int delete_from_open_addressing(HashTable *map, char *key){
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
-        map->analyse.probing++;
+        map->statistics.probing++;
 
-        if (map->table[index].state == EMPTY) {
+        if (map->bucket[index].status == EMPTY) {
             return 0;
         }
 
-        if (map->table[index].state == OCCUPIED && strcmp(map->table[index].key, key) == 0) {
-            map->table[index].state = DELETED;
-            map->analyse.deletes++;
+        if (map->bucket[index].status == OCCUPIED && strcmp(map->bucket[index].key, key) == 0) {
+            map->bucket[index].status = DELETED;
+            map->statistics.deletes++;
             return 1;
         }
     }
@@ -182,15 +135,15 @@ int delete_from_open_addressing(HashTable *map, char *key){
 int update_from_open_addressing(HashTable *map, char *key, int value){
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
-        map->analyse.probing++;
+        map->statistics.probing++;
 
-        if (map->table[index].state == EMPTY) {
+        if (map->bucket[index].status == EMPTY) {
             return 0;
         }
 
-        if (map->table[index].state == OCCUPIED && strcmp(map->table[index].key, key) == 0) {
-            map->table[index].value = value;
-            map->analyse.updates++;
+        if (map->bucket[index].status == OCCUPIED && strcmp(map->bucket[index].key, key) == 0) {
+            map->bucket[index].value = value;
+            map->statistics.updates++;
             return 1;
         }
     }
@@ -200,42 +153,42 @@ int update_from_open_addressing(HashTable *map, char *key, int value){
 // ========== SEPARATE_CHAINING (insert, search, delete, update)
 void insert_to_separate_chaining(HashTable *map, char *key, int value){
     uint index = first_hash(key, map->capacity);
-    Node *head = map->chainTable[index]; // first time is EMPTY
+    Node *head = map->chainbucket[index]; // first time is EMPTY
 
     while (head) { // if head exist means one node or more exist then go inside the while loop
-        map->analyse.probing++;
+        map->statistics.probing++;
 
         if (strcmp(head->key, key) == 0) {
             head->value = value;
-            map->analyse.updates++;
+            map->statistics.updates++;
             return;
         }
 
-        map->analyse.collisions++;
+        map->statistics.collisions++;
         head = head->next;
     }
 
     Node *newNode = malloc(sizeof(Node));
     strcpy(newNode->key, key);
     newNode->value = value;
-    newNode->next = map->chainTable[index];
+    newNode->next = map->chainbucket[index];
 
-    map->chainTable[index] = newNode;
+    map->chainbucket[index] = newNode;
 
-    map->analyse.inserts++;
+    map->statistics.inserts++;
     map->count++;
 }
 
 int search_from_separate_chaining(HashTable *map, char *key){
     uint index = first_hash(key, map->capacity);
 
-    Node *head = map->chainTable[index];
+    Node *head = map->chainbucket[index];
 
     while (head) {
-        map->analyse.probing++;
+        map->statistics.probing++;
 
         if (strcmp(head->key, key) == 0) {
-            map->analyse.searches++;
+            map->statistics.searches++;
             return head->value;
         }
         head = head->next;
@@ -245,19 +198,19 @@ int search_from_separate_chaining(HashTable *map, char *key){
 
 int delete_from_separate_chaining(HashTable *map, char *key){
     uint index = first_hash(key, map->capacity);
-    Node *head = map->chainTable[index];
+    Node *head = map->chainbucket[index];
     Node *prev = NULL;
 
     while (head) {
-        map->analyse.probing++;
+        map->statistics.probing++;
         if (strcmp(head->key, key) == 0) {
             if (prev) {
                 prev->next = head->next;
             }else {
-                map->chainTable[index] = head->next;
+                map->chainbucket[index] = head->next;
             }
             free(head);
-            map->analyse.deletes++;
+            map->statistics.deletes++;
             map->count--;
             return 1;
         }
@@ -269,14 +222,14 @@ int delete_from_separate_chaining(HashTable *map, char *key){
 
 int update_from_separate_chaining(HashTable *map, char *key, int value){
     uint index = first_hash(key, map->capacity);
-    Node *head = map->chainTable[index];
+    Node *head = map->chainbucket[index];
 
     while (head) {
-        map->analyse.probing++;
+        map->statistics.probing++;
 
         if (strcmp(head->key, key) == 0) {
             head->value = value;
-            map->analyse.updates++;
+            map->statistics.updates++;
             return 1;
         }
         head = head->next;
@@ -306,12 +259,12 @@ int exists(HashTable *map, char *key){
     return search(map, key) != -1;
 }
 
-// ========== return us the capacity of the HashTable
+// ========== return us the capacity of the Hashbucket
 int size(HashTable *map){
     return map->count;
 }
 
-// ========== check the Table has empty or not
+// ========== check the bucket has empty or not
 int isEmpty(HashTable *map){
     return map->count ==0;
 }
@@ -322,48 +275,48 @@ void clear(HashTable *map){
 
     if (map->mode == OPEN_ADDRESSING) {
         for (int i = 0; i < map->capacity; i++) {
-            map->table[i].state = EMPTY;
+            map->bucket[i].status = EMPTY;
         }
     }else {
         for (int i = 0; i < map->capacity; i++) {
-            Node *head = map->chainTable[i];
+            Node *head = map->chainbucket[i];
 
             while (head) {
             Node *temp = head;
             head = head->next;
             free(temp);
             }
-            map->chainTable[i] = NULL;
+            map->chainbucket[i] = NULL;
         }
     }
 }
 
-// ========== Destroy the full memory of the HashTable
+// ========== Destroy the full memory of the Hashbucket
 void destroy(HashTable *map){
     clear(map);
 
     if (map->mode == OPEN_ADDRESSING) {
-        free(map->table);
+        free(map->bucket);
     }else{
-        free(map->chainTable);
+        free(map->chainbucket);
     }
     free(map);
 }
 
-// ========== print all Analytics data
-void print_analytics(HashTable *map){
+// ========== print all Statistics data
+void print_Statistics(HashTable *map){
     printf("\n --- ANALYTICS ---\n");
-    printf("Inserts : %ld\n", map->analyse.inserts);
-    printf("Searches : %ld\n", map->analyse.searches);
-    printf("Updates : %ld\n", map->analyse.updates);
-    printf("Deletes : %ld\n", map->analyse.deletes);
-    printf("Collisions : %ld\n", map->analyse.collisions);
-    printf("Probing : %ld\n", map->analyse.probing);
+    printf("Inserts : %ld\n", map->statistics.inserts);
+    printf("Searches : %ld\n", map->statistics.searches);
+    printf("Updates : %ld\n", map->statistics.updates);
+    printf("Deletes : %ld\n", map->statistics.deletes);
+    printf("Collisions : %ld\n", map->statistics.collisions);
+    printf("Probing : %ld\n", map->statistics.probing);
 }
 
 int main(){
     printf(" ===== OPEN_ADDRESSING ===== \n");
-    HashTable *map1 = create_hash_table(INITIAL_CAPACITY, DOUBLE_HASH, OPEN_ADDRESSING);
+    HashTable *map1 = create_hash_bucket(INITIAL_CAPACITY, DOUBLE_HASH, OPEN_ADDRESSING);
     insert(map1, "apple", 100);
     insert(map1, "banana", 200);
     insert(map1, "orange", 300);
@@ -376,12 +329,12 @@ int main(){
     delete(map1, "banana");
     printf("banana after delete = %d\n", search(map1, "banana"));
 
-    print_analytics(map1);
+    print_Statistics(map1);
     destroy(map1);
 
     printf("\n ===== SEPARATE_CHAINING =====\n");
 
-    HashTable *map2 = create_hash_table(INITIAL_CAPACITY, LINEAR, SEPARATE_CHAINING);
+    HashTable *map2 = create_hash_bucket(INITIAL_CAPACITY, LINEAR, SEPARATE_CHAINING);
     insert(map2, "A", 1);
     insert(map2, "B", 2);
     insert(map2, "C", 3);
@@ -394,7 +347,7 @@ int main(){
     delete(map2, "B");
     printf("B after deleted = %d\n", search(map2, "B"));
 
-    print_analytics(map2);
+    print_Statistics(map2);
     destroy(map2);
     return 0;
 }
