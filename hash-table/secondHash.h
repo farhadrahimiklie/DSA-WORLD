@@ -54,6 +54,11 @@ typedef struct {
 uint first_hash(char *key, int capacity);
 uint second_hash(char *key, int capacity);
 uint which_type_of_probe_should_return(HashTable *map, char *key, int i);
+void rehash_open_addressing(HashTable *map);
+void rehash_separate_chain(HashTable *map);
+void insert_open_raw(HashTable *map, char *key, int value);
+void insert_chain_raw(HashTable *map, char *key, int value);
+void rehash(HashTable *map);
 HashTable *create_hash_table(int capacity, ProbingTypes probing, CollisionMode mode);
 void insert_to_open_addressing(HashTable *map, char *key, int value);
 int search_from_open_addressing(HashTable *map, char *key);

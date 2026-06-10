@@ -41,6 +41,95 @@ uint which_type_of_probe_should_return(HashTable *map, char *key, int i){
     return (index + i * second_hash(key, map->capacity)) % map->capacity;
 }
 
+void rehash_open_addressing(HashTable *map){
+    int oldCapacity = map->capacity;
+    int newCapacity = oldCapacity * 2;
+
+    Entry *oldBucket = map->bucket;
+
+    map->bucket = calloc(newCapacity, sizeof(Entry));
+    if (map->bucket == NULL) {
+        printf("Memory Allocation is Failed.\n");
+        exit(EXIT_FAILURE);
+    }
+    map->count = 0;
+
+    for (int i = 0; i < oldCapacity; i++) {
+        if (oldBucket[i].status == OCCUPIED) {
+            insert_to_open_addressing(map, oldBucket[i].key, oldBucket[i].value);
+        }
+    }
+    free(oldBucket);
+}
+
+void rehash_separate_chain(HashTable *map){
+    int oldCapacity = map->capacity;
+    int newCapacity = oldCapacity * 2;
+
+    Node **oldBucket = map->chainbucket;
+
+    map->chainbucket = calloc(newCapacity, sizeof(Node*));
+    if (map->chainbucket == NULL) {
+        printf("Memory Allocation is Failed.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    map->count = 0;
+
+    for (int i = 0; i < oldCapacity; i++) {
+        Node *current = oldBucket[i];
+        while (current) {
+            insert_to_separate_chaining(map, current->key, current->value);
+
+            Node *temp = current;
+            current = current->next;
+            free(temp);
+        }
+    }
+    free(oldBucket);
+}
+
+void insert_open_raw(HashTable *map, char *key, int value){
+    for (int i = 0; i < map->capacity; i++) {
+        uint index = which_type_of_probe_should_return(map, key, i);
+
+        if (map->bucket[index].status != OCCUPIED) {
+            strncpy(map->bucket[index].key, key, KEY_CAPACITY -1);
+            map->bucket[index].key[KEY_CAPACITY -1] = '\0';
+            map->bucket[index].value = value;
+            map->bucket[index].status = OCCUPIED;
+
+            map->count++;
+            return;
+        }
+    }
+}
+
+void insert_chain_raw(HashTable *map, char *key, int value){
+    uint index = first_hash(key, map->capacity);
+
+    Node *current = malloc(sizeof(Node));
+    if (current == NULL) {
+        printf("Memory Allocation is Failed.\n");
+        exit(EXIT_FAILURE);
+    }
+    strcpy(current->key, key);
+    current->value = value;
+
+    current->next = map->chainbucket[index];
+    map->chainbucket[index] = current;
+
+    map->count++;
+}
+
+void rehash(HashTable *map){
+    if (map->mode == OPEN_ADDRESSING) {
+        rehash_open_addressing(map);
+    }else {
+        rehash_separate_chain(map);
+    }
+}
+
 HashTable *create_hash_bucket(int capacity, ProbingTypes probing, CollisionMode mode){
     HashTable *init_hash = (HashTable*)malloc(sizeof(HashTable));
     if (!init_hash) {
@@ -76,6 +165,13 @@ HashTable *create_hash_bucket(int capacity, ProbingTypes probing, CollisionMode 
 
 // ========== OPEN_ADDRESSING (insert, search, delete, update)
 void insert_to_open_addressing(HashTable *map, char *key, int value){
+
+    double load_factor = (double)map->count / map->capacity;
+
+    if (load_factor >= LOAD_FACTOR_BALANCE_THRESHOLD) {
+        rehash_open_addressing(map);
+    }
+
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
         map->statistics.probing++;
@@ -152,6 +248,13 @@ int update_from_open_addressing(HashTable *map, char *key, int value){
 
 // ========== SEPARATE_CHAINING (insert, search, delete, update)
 void insert_to_separate_chaining(HashTable *map, char *key, int value){
+
+    double load_factor = (double)map->count / map->capacity;
+
+    if (load_factor >= LOAD_FACTOR_BALANCE_THRESHOLD) {
+        rehash_separate_chain(map);
+    }
+
     uint index = first_hash(key, map->capacity);
     Node *head = map->chainbucket[index]; // first time is EMPTY
 
