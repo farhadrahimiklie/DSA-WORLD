@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "binary_search.h"
 
 int Binary_Search_Iterative_Method(int array[], int size, int target){
     int start = 0, end = size -1;
