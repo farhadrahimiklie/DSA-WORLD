@@ -41,54 +41,6 @@ uint which_type_of_probe_should_return(HashTable *map, char *key, int i){
     return (index + i * second_hash(key, map->capacity)) % map->capacity;
 }
 
-void rehash_open_addressing(HashTable *map){
-    int oldCapacity = map->capacity;
-    int newCapacity = oldCapacity * 2;
-
-    Entry *oldBucket = map->bucket;
-
-    map->bucket = calloc(newCapacity, sizeof(Entry));
-    if (map->bucket == NULL) {
-        printf("Memory Allocation is Failed.\n");
-        exit(EXIT_FAILURE);
-    }
-    map->count = 0;
-
-    for (int i = 0; i < oldCapacity; i++) {
-        if (oldBucket[i].status == OCCUPIED) {
-            insert_to_open_addressing(map, oldBucket[i].key, oldBucket[i].value);
-        }
-    }
-    free(oldBucket);
-}
-
-void rehash_separate_chain(HashTable *map){
-    int oldCapacity = map->capacity;
-    int newCapacity = oldCapacity * 2;
-
-    Node **oldBucket = map->chainbucket;
-
-    map->chainbucket = calloc(newCapacity, sizeof(Node*));
-    if (map->chainbucket == NULL) {
-        printf("Memory Allocation is Failed.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    map->count = 0;
-
-    for (int i = 0; i < oldCapacity; i++) {
-        Node *current = oldBucket[i];
-        while (current) {
-            insert_to_separate_chaining(map, current->key, current->value);
-
-            Node *temp = current;
-            current = current->next;
-            free(temp);
-        }
-    }
-    free(oldBucket);
-}
-
 void insert_open_raw(HashTable *map, char *key, int value){
     for (int i = 0; i < map->capacity; i++) {
         uint index = which_type_of_probe_should_return(map, key, i);
@@ -120,6 +72,54 @@ void insert_chain_raw(HashTable *map, char *key, int value){
     map->chainbucket[index] = current;
 
     map->count++;
+}
+
+void rehash_open_addressing(HashTable *map){
+    int oldCapacity = map->capacity;
+    int newCapacity = oldCapacity * 2;
+
+    Entry *oldBucket = map->bucket;
+
+    map->bucket = calloc(newCapacity, sizeof(Entry));
+    if (map->bucket == NULL) {
+        printf("Memory Allocation is Failed.\n");
+        exit(EXIT_FAILURE);
+    }
+    map->count = 0;
+
+    for (int i = 0; i < oldCapacity; i++) {
+        if (oldBucket[i].status == OCCUPIED) {
+            insert_open_raw(map, oldBucket[i].key, oldBucket[i].value);
+        }
+    }
+    free(oldBucket);
+}
+
+void rehash_separate_chain(HashTable *map){
+    int oldCapacity = map->capacity;
+    int newCapacity = oldCapacity * 2;
+
+    Node **oldBucket = map->chainbucket;
+
+    map->chainbucket = calloc(newCapacity, sizeof(Node*));
+    if (map->chainbucket == NULL) {
+        printf("Memory Allocation is Failed.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    map->count = 0;
+
+    for (int i = 0; i < oldCapacity; i++) {
+        Node *current = oldBucket[i];
+        while (current) {
+            insert_chain_raw(map, current->key, current->value);
+
+            Node *temp = current;
+            current = current->next;
+            free(temp);
+        }
+    }
+    free(oldBucket);
 }
 
 void rehash(HashTable *map){
@@ -424,6 +424,8 @@ int main(){
     insert(map1, "banana", 200);
     insert(map1, "orange", 300);
 
+    rehash(map1);
+
     printf("banana = %d\n", search(map1, "banana"));
 
     update(map1, "banana", 500);
@@ -436,6 +438,8 @@ int main(){
     destroy(map1);
 
     printf("\n ===== SEPARATE_CHAINING =====\n");
+
+    
 
     HashTable *map2 = create_hash_bucket(INITIAL_CAPACITY, LINEAR, SEPARATE_CHAINING);
     insert(map2, "A", 1);
